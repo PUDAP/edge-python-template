@@ -4,6 +4,7 @@ Main entry point for the ${MACHINE_ID} machine edge service.
 This module provides the main event loop for the machine, handling command
 execution via NATS messaging, telemetry publishing, and connection management.
 """
+
 import asyncio
 import logging
 import sys
@@ -22,6 +23,7 @@ logging.basicConfig(
 logging.getLogger("driver").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
+
 # Environment configuration
 class Config(BaseSettings):
     machine_id: str
@@ -37,6 +39,7 @@ class Config(BaseSettings):
     @property
     def nats_server_list(self) -> list[str]:
         return [s.strip() for s in self.nats_servers.split(",") if s.strip()]
+
 
 def load_config() -> Config:
     """Load and validate configuration; exit process on failure."""
@@ -83,14 +86,14 @@ async def main():
     await runner.run()
 
 
-# Run main in a loop; retry on fatal errors, ignore KeyboardInterrupt.
+# Run main in a loop; retry on fatal errors, exit gracefully on KeyboardInterrupt.
 if __name__ == "__main__":
     while True:
         try:
             asyncio.run(main())
         except KeyboardInterrupt:
-            logger.warning("Received KeyboardInterrupt, but continuing to run...")
-            time.sleep(1)
+            logger.warning("Gracefully stopping...")
+            sys.exit(0)
         except Exception as e:
             logger.error("Fatal error: %s", e, exc_info=True)
             time.sleep(5)
