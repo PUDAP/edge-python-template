@@ -11,4 +11,5 @@ dependencies = [
     "python-dotenv>=1.2.1",
     "setuptools<81",
     "websocket-client>=1.8.0",
+    "psutil>=6.1.1",
 ]
