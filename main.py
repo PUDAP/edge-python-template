@@ -10,6 +10,7 @@ import logging
 import sys
 import time
 import psutil
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from puda import EdgeNatsClient, EdgeRunner
 from driver import Driver
@@ -32,7 +33,7 @@ class Config(BaseSettings):
     # TODO: Add driver-specific config fields here (e.g. device port, IP, etc.)
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=Path(__file__).resolve().parent / ".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
     )
