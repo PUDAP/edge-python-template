@@ -18,16 +18,8 @@ Below are the public methods that are exposed to the puda CLI.
 
 class Driver:
     def __init__(self):
-        self.startup()
-
-    def startup(self) -> bool:
-        """
-        Startup the machine
-
-        Returns:
-            bool: True if the startup was successful, False otherwise
-        """
-        return True
+        # Initialize config and start the machine
+        pass
 
     def shutdown(self) -> bool:
         """
