@@ -51,7 +51,7 @@ class Driver:
 
     def get_position(self):
         """
-        Get the current position of the machine
+        Get the current position of the machine (optional - if the machine has a position sensor)
 
         Returns:
             dict: A dictionary containing the current position of the machine
