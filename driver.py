@@ -23,8 +23,7 @@ class Driver:
 
     def shutdown(self) -> bool:
         """
-        Shutdown the machine. Release serial ports, sockets, cameras, etc and disconnects from NATS.
-        Used by PUDA CLI to update the machine `puda machine update <machine_id>`
+        Shutdown the machine. Releases all resources and connections to the machine.
 
         Returns:
             bool: True if the shutdown was successful, False otherwise

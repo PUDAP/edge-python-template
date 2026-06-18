@@ -12,7 +12,7 @@ wheels = [
 ]
 
 [[package]]
-name = "machine-template"
+name = "edge-python-template"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

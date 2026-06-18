@@ -1,17 +1,21 @@
-# machine-template
+# edge-python-template
 
-Template for a PUDA machine edge service. Use this to scaffold a new machine integration.
+Template for a machine edge service in python. Use this to scaffold a new machine integration.
 
 ## Repo Structure
 
 ```
-machine-template/
+edge-python-template/
 ├── pyproject.toml          # Python project dependencies
+├── uv.lock                 # Locked dependency versions (uv)
 ├── main.py                 # Main edge service — NATS + driver instance
 ├── driver.py               # Machine driver and public PUDA commands
 ├── Dockerfile              # Container build
 ├── compose.yml             # Docker Compose
-└── .env.example            # Environment variable template
+├── start_edge.bat          # Windows launcher script
+├── .env.example            # Environment variable template
+├── .dockerignore           # Docker build context exclusions
+└── .gitignore              # Git ignore rules
 ```
 
 ## AI Agent Instructions
