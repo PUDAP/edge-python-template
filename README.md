@@ -12,6 +12,7 @@ edge-python-template/
 ├── driver.py               # Machine driver and public PUDA commands
 ├── Dockerfile              # Container build
 ├── compose.yml             # Docker Compose
+├── compose.livestream.yml  # Livestream stack for camera streaming
 ├── start_edge.bat          # Windows launcher script
 ├── .env.example            # Environment variable template
 ├── .dockerignore           # Docker build context exclusions
@@ -90,6 +91,48 @@ Stop:
 ```bash
 docker compose -f compose.yml down
 ```
+
+## Livestream Cameras
+
+The livestream stack runs `mediamtx` and `ffmpeg` in a separate Compose file. It streams two local V4L2 camera devices to MediaMTX as `cam0` and `cam1`.
+
+Required `.env` values:
+
+- `TAILSCALE_IP` - Tailscale IP advertised for WebRTC clients
+- `VIDEO_DEVICE_0` - first camera device path, for example `/dev/video0`
+- `VIDEO_DEVICE_1` - second camera device path, for example `/dev/video1`
+
+Check which cameras are available:
+
+```bash
+ls /dev/video*
+```
+
+If cameras are present, update `.env` with the matching devices:
+
+```dotenv
+TAILSCALE_IP=100.107.192.52
+VIDEO_DEVICE_0=/dev/video0
+VIDEO_DEVICE_1=/dev/video1
+```
+
+Start the livestream stack:
+
+```bash
+docker compose -f compose.livestream.yml up -d
+```
+
+Stop the livestream stack:
+
+```bash
+docker compose -f compose.livestream.yml down
+```
+
+Stream endpoints:
+
+- RTMP publish paths: `rtmp://<host>:1935/cam0`, `rtmp://<host>:1935/cam1`
+- HLS playback: `http://<host>:8888/cam0`, `http://<host>:8888/cam1`
+- WebRTC/WHEP: `http://<host>:8889/cam0`, `http://<host>:8889/cam1`
 
 ## Run Baremetal (uv)
 
