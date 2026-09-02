@@ -13,6 +13,7 @@ edge-python-template/
 ├── Dockerfile              # Container build
 ├── compose.yml             # Docker Compose
 ├── start_edge.bat          # Windows launcher script
+├── chrony/                 # Edge-host NTP client (points at site Chrony)
 ├── .env.example            # Environment variable template
 ├── .dockerignore           # Docker build context exclusions
 └── .gitignore              # Git ignore rules
@@ -51,7 +52,7 @@ In `main.py`:
 
 In `Dockerfile`, add any system-level dependencies your driver needs (e.g. `libusb-dev` for USB devices).
 
-Replace this file with a machine-specific README describing what the machine does, how to connect to it, and any hardware prerequisites.
+Replace this file with a machine-specific README describing what the machine does, how to connect to it, and any hardware prerequisites. Keep the `chrony/` directory; every edge host still needs it.
 
 ---
 
@@ -69,9 +70,16 @@ Edit `.env` and fill in:
 - `NATS_SERVERS` — comma-separated NATS server URLs
 - Any additional driver-specific variables
 
+## Clock sync (edge hosts)
+
+On each edge PC, run the scripts in [`chrony/`](chrony/README.md). Pass the
+site NTP server IP when you invoke them (do not put it in `.env`). The edge
+process uses the host clock; Docker containers do not run Chrony.
+
 ## Run With Docker (Recommended)
 
-All commands below run from repo root.
+All commands below run from repo root. Run the host Chrony script above first
+if this PC should lock to the site NTP server.
 
 Build and start:
 
