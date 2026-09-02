@@ -17,6 +17,9 @@ Below are the public methods that are exposed to the puda CLI.
 
 
 class Driver:
+    """
+    Replace this with one sentence describing the machine and its functionality.
+    """
     def __init__(self):
         # Initialize config and start the machine
         pass
