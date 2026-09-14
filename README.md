@@ -1,6 +1,6 @@
 # edge-python-template
 
-Template for a machine edge service in python. Use this to scaffold a new machine integration.
+Template for a machine edge service in Python (PUDA CLI **v0.1.0**, Python SDK **0.0.17**). Use this to scaffold a new machine integration.
 
 ## Repo Structure
 
@@ -9,7 +9,7 @@ edge-python-template/
 ├── pyproject.toml          # Python project dependencies
 ├── uv.lock                 # Locked dependency versions (uv)
 ├── main.py                 # Main edge service — NATS + driver instance
-├── driver.py               # Machine driver and public PUDA commands
+├── driver.py               # Machine driver and @command methods
 ├── Dockerfile              # Container build
 ├── compose.yml             # Docker Compose
 ├── start_edge.bat          # Windows launcher script
@@ -32,9 +32,16 @@ Search the repo for every `TODO` marker and resolve each one — typically renam
 
 ### 3. Implement the Driver
 
-Add the machine driver source in `driver.py`. The driver must expose a class that `puda.EdgeRunner` can wrap. Public methods should only accept primitives or standard data structures (like JSON, arrays, and tuples) rather than custom class instances.
+Add the machine driver source in `driver.py`. The driver must expose a class that `puda.EdgeRunner` can wrap. Parameters should be JSON primitives (`str`, `int`, `float`, `bool`, `dict`, `list`) rather than custom class instances.
 
-- Add required dependencies in `pyproject.toml` if needed.
+- Require `puda>=0.0.17` in `pyproject.toml` (already set in this template). Add other hardware dependencies as needed.
+- Put a one-sentence summary in the **class docstring**. `puda machine list` and `puda machine ping` show that first paragraph as `description`.
+- Decorate every remotely callable method with `@command`. Undecorated methods are not advertised. A driver with no `@command` methods fails at startup.
+- Keep helpers private (`_name`). Raise on hardware failure. Returning `False` is still a successful PUDA response (`{"result": false}`).
+- Attach `@safety` to commands that can cause harm. It is published in the catalog; it does not block edge dispatch. This template includes two examples in `driver.py`:
+  - `move_to` — `confirm=True` so the agent prompts the operator before the move.
+  - `set_heater` — advisory only (`confirm` defaults to `false`).
+  Omit `@safety` on read-only commands such as `get_position`.
 
 ### 4. Add Driver-Specific Environment Variables
 
