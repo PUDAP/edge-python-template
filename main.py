@@ -9,7 +9,6 @@ import asyncio
 import logging
 import sys
 import time
-import psutil
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from puda import EdgeNatsClient, EdgeRunner
@@ -30,7 +29,8 @@ logger = logging.getLogger(__name__)
 class Config(BaseSettings):
     machine_id: str
     nats_servers: str
-    # TODO: Add driver-specific config fields here (e.g. device port, IP, etc.)
+    # TODO: Replace with your driver's config fields (e.g. IP address, baud rate)
+    device_port: str
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parent / ".env",
@@ -59,7 +59,7 @@ async def main():
     logger.info("Full config: %s", config.model_dump())
 
     logger.info("Initializing machine driver")
-    driver = Driver()
+    driver = Driver(port=config.device_port)
     logger.info("Machine driver initialized successfully")
 
     logger.info("Connecting to NATS at %s", config.nats_servers)
@@ -68,28 +68,7 @@ async def main():
         machine_id=config.machine_id,
     )
 
-    async def telemetry_handler():
-        await edge_nats_client.publish_heartbeat()
-        await edge_nats_client.publish_position(driver.get_position())
-        sensor = None
-        if hasattr(psutil, "sensors_temperatures"):
-            all_temps = psutil.sensors_temperatures() or {}
-            sensor = next(
-                (v[0] for k in ("coretemp", "cpu_thermal", "k10temp", "acpitz") if (v := all_temps.get(k))),
-                None,
-            )
-        await edge_nats_client.publish_health({
-            "cpu": psutil.cpu_percent(interval=None),
-            "mem": psutil.virtual_memory().percent,
-            "temp": sensor.current if sensor else None,
-        })
-
-    runner = EdgeRunner(
-        nats_client=edge_nats_client,
-        machine_driver=driver,
-        telemetry_handler=telemetry_handler,
-        state_handler=lambda: {},
-    )
+    runner = EdgeRunner(nats_client=edge_nats_client, machine_driver=driver)
     await runner.connect()
     logger.info("NATS client initialized successfully")
     logger.info(

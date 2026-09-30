@@ -1,121 +1,123 @@
 """
-Machine driver.
+Example driver class for a machine.
 
-Only methods decorated with ``@command`` are advertised and callable over NATS
-(Python SDK 0.0.17, CLI v0.1.0). Undecorated public methods stay local.
-A driver with no ``@command`` methods fails at startup.
+Methods marked with ``@command`` are advertised to PUDA and callable through the
+CLI or a protocol. Undecorated methods are neither advertised nor callable, so
+helpers and one-off utilities stay internal. Document every command with a
+docstring, arguments, and return type. A command signals failure by raising;
+returning False still counts as success.
 
-``@safety`` is optional catalog metadata for agents. It does not block dispatch.
-This file has two examples:
+Add ``@safety(...)`` under ``@command`` to publish hazards and preconditions
+with the command. It is advisory for agents and operators and does not block
+dispatch; enforce real preconditions in the method body.
 
-- ``move_to`` — ``confirm=True`` so the agent prompts the operator first
-- ``set_heater`` — advisory only (``confirm`` defaults to ``False``)
+Methods marked with ``@tlm_stream(interval=...)`` are polled every ``interval``
+seconds in a separate worker thread and published to
+``puda.<machine_id>.tlm.stream.<name>``. They can run concurrently with
+commands, which also run in worker threads.
 
-Omit ``@safety`` on read-only or harmless commands (``get_position``).
+The ``@machine_state`` method's dict is merged into every MACHINE_STATE update
+(e.g. homed flag, loaded labware). At most one is allowed.
 
-Keep helpers private (``_name``). Raise on hardware failure; returning ``False``
-is still a successful PUDA response (``{"result": false}``).
+EdgeRunner publishes the heartbeat and host health (CPU, memory, temperature)
+on its own.
 """
 
-from puda import command, safety
+from puda import command, machine_state, safety, tlm_stream
 
 
 class Driver:
-    """Replace this with one sentence describing the machine and its functionality."""
+    """TODO: One-sentence summary of this machine, shown by puda machine list and info."""
 
-    def __init__(self):
-        # Initialize config and start the machine
-        pass
+    def __init__(self, port: str):
+        # TODO: Open the connection to the machine (e.g. serial.Serial(port, 9600))
+        self._port = port
+        self._homed = False
+        self._position = None
+
+    @machine_state # only one machine_state method is allowed
+    def snapshot(self) -> dict:
+        """
+        Extra fields merged into MACHINE_STATE updates.
+
+        Called on each state change (startup, command start and end, errors,
+        shutdown), not on a timer. Runs on the event loop, so return cached
+        values only; do not read from the device here. Use @tlm_stream for
+        values that change outside commands.
+        """
+        return {"homed": self._homed, "position": self._position}
 
     @command
     def shutdown(self) -> bool:
         """
         Shutdown the machine. Releases all resources and connections to the machine.
-        If defined, called before the edge stops.
 
         Returns:
-            bool: True if the shutdown was successful
+            bool: True if the shutdown was successful, False otherwise
         """
         return True
 
     @command
     def home(self) -> bool:
         """
-        Homes the machine. Used by PUDA CLI ``puda machine home <machine_id>``.
+        Homes the machine. Used by PUDA CLI `puda machine home <machine_id>`
 
         Returns:
-            bool: True if the home was successful
+            bool: True if the home was successful, False otherwise
         """
+        self._homed = True
         return True
 
     @command
     def reset(self) -> bool:
         """
-        Software reset the machine. Used by PUDA CLI ``puda machine reset <machine_id>``.
-        ``puda machine reset`` always clears the active run ID first, then calls this
-        if present.
+        Software reset the machine. Used by PUDA CLI `puda machine reset <machine_id>`
 
         Returns:
-            bool: True if the reset was successful
+            bool: True if the reset was successful, False otherwise
         """
+        self._homed = False
         return True
 
     @command
+    @safety(  # advisory context shown to agents; does not block the command
+        summary="Collision risk from moving an unhomed axis or into an occupied workspace.",
+        hazards=["collision", "pinch"],
+        requires="Machine must be homed.",
+        forbidden_when="Do not move while a person is reaching into the workspace.",
+        confirm=True,  # agents must ask the operator for confirmation before running it
+    )
+    def move_to(self, x: float, y: float, z: float) -> dict:
+        """
+        Move to an absolute position.
+
+        Args:
+            x: Target X in mm
+            y: Target Y in mm
+            z: Target Z in mm
+
+        Returns:
+            dict: The position after the move
+        """
+        if not self._homed:
+            raise RuntimeError("Machine is not homed; run home first")
+        # TODO: Send the move to the machine and wait until it finishes
+        self._position = {"x": x, "y": y, "z": z}
+        return self._position
+
+    @tlm_stream(interval=3.0, name="pos") # stream every 3 seconds to puda.<machine_id>.tlm.stream.pos
     def get_position(self) -> dict:
         """
-        Get the current position of the machine (optional — if the machine has a
-        position sensor). Read-only; no ``@safety``.
+        Current position of the machine. Remove if the machine has no position sensor.
+
+        As a @tlm_stream, this is called every 3 seconds in a separate worker
+        thread and may run at the same time as a command. Return None to skip
+        a sample; exceptions are logged and the stream keeps running. The
+        reading is cached in self._position so snapshot can include it.
 
         Returns:
             dict: A dictionary containing the current position of the machine
         """
-        return {"x": 0, "y": 0, "z": 0}
-
-    @command
-    @safety(
-        summary="Collision risk from unhomed motion or an occupied workspace.",
-        hazards=["collision"],
-        requires="Machine must just have been homed.",
-        forbidden_when="Do not move if the workspace is occupied or human movement is detected.",
-        confirm=True,
-    )
-    def move_to(self, x_mm: float, y_mm: float, z_mm: float) -> bool:
-        """
-        Move the machine head to an absolute position.
-
-        Args:
-            x_mm: Target X position in millimeters.
-            y_mm: Target Y position in millimeters.
-            z_mm: Target Z position in millimeters.
-
-        Returns:
-            bool: True if the move was accepted.
-
-        Raises:
-            RuntimeError: If the hardware rejects the move.
-        """
-        # TODO: call the hardware API. Raise on failure.
-        return True
-
-    @command
-    @safety(
-        summary="Thermal hazard from heater power.",
-        hazards=["thermal"],
-        requires="Workspace must be clear of flammable material.",
-        forbidden_when="Do not heat if a thermal interlock is active.",
-    )
-    def set_heater(self, celsius: float) -> bool:
-        """
-        Set the heater temperature. Advisory safety only; no operator confirm.
-
-        Args:
-            celsius: Target temperature in Celsius.
-
-        Returns:
-            bool: True if the setpoint was applied.
-
-        Raises:
-            RuntimeError: If the hardware rejects the setpoint.
-        """
-        # TODO: call the hardware API. Raise on failure.
-        return True
+        # TODO: Read the position from the machine
+        self._position = {"x": 0, "y": 0, "z": 0}
+        return self._position
