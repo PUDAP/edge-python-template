@@ -7,7 +7,7 @@ ENV UV_COMPILE_BYTECODE=1
 
 # Install system dependencies for USB/serial device access, building Python packages
 RUN apt-get update && apt-get install -y \
-  build-essential \
+  build-essential git \
   && rm -rf /var/lib/apt/lists/*
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv

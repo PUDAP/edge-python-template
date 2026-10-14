@@ -34,7 +34,7 @@ Search the repo for every `TODO` marker and resolve each one — typically renam
 
 Add the machine driver source in `driver.py`. The driver must expose a class that `puda.EdgeRunner` can wrap.
 
-- Require `puda>=0.0.18` in `pyproject.toml` (already set in this template). Add other hardware dependencies as needed.
+- Require `puda>=0.0.19` in `pyproject.toml` (already set in this template). Add other hardware dependencies as needed.
 - Put a one-sentence summary in the **class docstring**. `puda machine list` and `puda machine info` show that first paragraph as `description`.
 - Decorate every remotely callable method with `@command`. Undecorated methods are not advertised or callable. A driver with no `@command` methods fails at startup.
 - Parameters should be JSON primitives (`str`, `int`, `float`, `bool`, `dict`, `list`) rather than custom class instances.
@@ -85,6 +85,21 @@ Edit `.env` and fill in:
 ## Run With Docker (Recommended)
 
 All commands below run from repo root.
+
+For NATS E2EE, set both `PUDA_NATS_CA` and `PUDA_E2E_KEY_FILE` in
+`.env` to existing absolute paths on the local machine, and use a `tls://`
+NATS server URL. Compose mounts those files and supplies their container paths
+to the SDK. The CA is read-only; the key is writable to persist key rotations.
+Keep these files outside the Docker build context. Leave both variables empty
+or commented out for plaintext `nats://` connections (unused `/dev/null`
+mounts are used in that case). TLS-only connections use the CA without a key;
+payload encryption can also be configured independently. The SDK validates
+configured files before connecting.
+
+The template passes paths directly into `EdgeNatsClient`. Its uv source pins
+the Git revision containing this API, still versioned 0.0.19. The existing
+PyPI 0.0.19 predates the API and cannot be replaced. Use `uv sync --locked`
+with Git installed to obtain the pinned SDK.
 
 Build and start:
 

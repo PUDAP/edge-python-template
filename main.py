@@ -31,6 +31,8 @@ class Config(BaseSettings):
     nats_servers: str
     # TODO: Replace with your driver's config fields (e.g. IP address, baud rate)
     device_port: str
+    puda_nats_ca: str = ""
+    puda_e2e_key_file: str = ""
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parent / ".env",
@@ -66,6 +68,8 @@ async def main():
     edge_nats_client = EdgeNatsClient(
         servers=config.nats_server_list,
         machine_id=config.machine_id,
+        ca_file=config.puda_nats_ca,
+        e2e_key_file=config.puda_e2e_key_file,
     )
 
     runner = EdgeRunner(nats_client=edge_nats_client, machine_driver=driver)
