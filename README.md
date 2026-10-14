@@ -34,7 +34,7 @@ Search the repo for every `TODO` marker and resolve each one — typically renam
 
 Add the machine driver source in `driver.py`. The driver must expose a class that `puda.EdgeRunner` can wrap.
 
-- Require `puda>=0.0.20` in `pyproject.toml` (already set in this template). Add other hardware dependencies as needed.
+- Require `puda>=0.0.21` in `pyproject.toml` (already set in this template). Add other hardware dependencies as needed.
 - Put a one-sentence summary in the **class docstring**. `puda machine list` and `puda machine info` show that first paragraph as `description`.
 - Decorate every remotely callable method with `@command`. Undecorated methods are not advertised or callable. A driver with no `@command` methods fails at startup.
 - Parameters should be JSON primitives (`str`, `int`, `float`, `bool`, `dict`, `list`) rather than custom class instances.
@@ -96,7 +96,7 @@ mounts are used in that case). TLS-only connections use the CA without a key;
 payload encryption can also be configured independently. The SDK validates
 configured files before connecting.
 
-The template passes paths directly into `EdgeNatsClient`, using SDK 0.0.20
+The template passes paths directly into `EdgeNatsClient`, using SDK 0.0.21
 from PyPI. Run `uv sync --locked` to install the locked dependencies.
 
 Build and start:
