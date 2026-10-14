@@ -79,6 +79,7 @@ Edit `.env` and fill in:
 
 - `MACHINE_ID` — machine identifier
 - `NATS_SERVERS` — comma-separated NATS server URLs
+- `PUDA_NATS_CA` and `PUDA_E2E_KEY_FILE` — optional CA and shared key file paths when NATS E2EE is set up
 - Any additional driver-specific variables
 
 ## Run With Docker (Recommended)
